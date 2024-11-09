@@ -1,5 +1,5 @@
 <div align="center">
-  <img src="./resources/project_logo.png" width="400" alt="Project Logo"/>
+  <img src="./logo.png" width="400" alt="Project Logo"/>
   <h1>MoCoV3 Pretraining on MillionAID</h1>
   <p>A guide to pretraining MoCoV3 on the MillionAID dataset, including setup, dataset preparation, and common issues.</p>
   <br/>
