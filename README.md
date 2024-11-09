@@ -12,7 +12,7 @@
 
 <!-- LinkedIn badges for team members -->
 [![Ajay Pathak LinkedIn](https://img.shields.io/badge/LinkedIn-Ajay%20Pathak-blue?logo=linkedin&style=flat)](https://www.linkedin.com/in/ajay-pathak/) <!-- Replace with actual LinkedIn URL -->
-[![Sourav Rout LinkedIn](https://img.shields.io/badge/LinkedIn-Sourav%20Rout-blue?logo=linkedin&style=flat)](linkedin.com/in/sourav-rout-4b3384176) <!-- Replace with actual LinkedIn URL -->
+[![Sourav Rout LinkedIn](https://img.shields.io/badge/LinkedIn-Sourav%20Rout-blue?logo=linkedin&style=flat)](https://www.linkedin.com/in/sourav-rout-4b3384176/) <!-- Replace with actual LinkedIn URL -->
 
  
 </div>
