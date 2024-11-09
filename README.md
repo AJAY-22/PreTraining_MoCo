@@ -4,7 +4,7 @@
   <p>A guide to pretraining MoCoV3 on the MillionAID dataset, including setup, dataset preparation, and common issues.</p>
   <br/>
 
-# MoCoV3 Pretraining on MillionAID
+
 [![release](https://img.shields.io/badge/release-V1.0.0-%230099FF)](https://github.com/your_repo/mocov3_pretrain/releases)
 [![arxiv](https://img.shields.io/badge/arXiv-2104.02057-b31b1b.svg?style=flat)](https://arxiv.org/abs/2104.02057) <!-- Link to MoCoV3 paper -->
 [![MoCoV3 Repo](https://img.shields.io/badge/MoCoV3-FacebookAI-%2360A5FA)](https://github.com/facebookresearch/moco-v3) <!-- Original MoCoV3 GitHub repo -->
