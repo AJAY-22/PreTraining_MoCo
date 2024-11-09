@@ -6,11 +6,9 @@
 
 
 [![release](https://img.shields.io/badge/release-V1.0.0-%230099FF)](https://github.com/your_repo/mocov3_pretrain/releases)
-[![arxiv](https://img.shields.io/badge/arXiv-2104.02057-b31b1b.svg?style=flat)](https://arxiv.org/abs/2104.02057) <!-- Link to MoCoV3 paper -->
+[![paper](https://img.shields.io/badge/arXiv-2104.02057-b31b1b.svg?style=flat)](https://arxiv.org/abs/2104.02057) <!-- Link to MoCoV3 paper -->
 [![MoCoV3 Repo](https://img.shields.io/badge/MoCoV3-FacebookAI-%2360A5FA)](https://github.com/facebookresearch/moco-v3) <!-- Original MoCoV3 GitHub repo -->
-[![docs](https://img.shields.io/badge/docs-latest-%233267B6)](https://your_repo_link/docs) <!-- Placeholder link for documentation -->
-[![license](https://img.shields.io/badge/license-MIT-%23FFC700)](https://github.com/your_repo/mocov3_pretrain/blob/main/LICENSE) <!-- Adjust as per license -->
-[![open issues](https://img.shields.io/github/issues-raw/your_repo/mocov3_pretrain?color=%23FF5733)](https://github.com/your_repo/mocov3_pretrain/issues) <!-- Replace with actual repo issues link -->
+[![open issues](https://img.shields.io/github/issues-raw/your_repo/mocov3_pretrain?color=%23FF5733)](https://github.com/AJAY-22/PreTraining_MoCo/issues) <!-- Replace with actual repo issues link -->
 
 <!-- LinkedIn badges for team members -->
 [![Ajay Pathak LinkedIn](https://img.shields.io/badge/LinkedIn-Ajay%20Pathak-blue?logo=linkedin&style=flat)](https://www.linkedin.com/in/ajay-pathak/) <!-- Replace with actual LinkedIn URL -->
