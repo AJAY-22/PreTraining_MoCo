@@ -49,9 +49,38 @@ This project requires the following:
 
 To start, create and activate a new `conda` environment:
 
-```bash
+```shell
 conda create -n mocov3_pretrain python=3.8 -y
 conda activate mocov3_pretrain
+```
+
+## 📂 Prepare MillionAID Dataset
+
+To use the MillionAID dataset for MoCoV3 pretraining, we will download it directly from [Hugging Face Datasets](https://huggingface.co/datasets/torchgeo/million-aid). Follow these steps to get the dataset ready for training:
+
+# Step 1: Clone MillionAID dataset from Hugging Face
+```shell
+
+git clone https://huggingface.co/datasets/torchgeo/million-aid
+cd million-aid
+
+```
+
+# Step 3: Download the test and train sets as zip files
+wget -O test.zip "https://huggingface.co/datasets/torchgeo/million-aid/resolve/main/test.zip"
+wget -O train.zip "https://huggingface.co/datasets/torchgeo/million-aid/resolve/main/train.zip"
+
+# Step 4: Unzip both files to access images
+unzip test.zip -d test_set
+unzip train.zip -d train_set
+
+# Step 5: Move into appropriate folders if required for easy access
+mv test_set/* path/to/dataset/folder/test
+mv train_set/* path/to/dataset/folder/train
+
+# Clean up by removing zip files
+rm test.zip train.zip
+
 
 
 
