@@ -142,7 +142,7 @@ The training curves for both pretraining on 150k images from the MillionAID data
 
 Below is the loss curve from the MoCoV3 pretraining phase on the MillionAID 150k subset:
 
-![Pretraining Loss Curve](path/to/pretraining_loss_curve.png)
+![Pretraining Loss Curve](./images/pretraining.jpg)
 
 ### Linear Classification Results
 
@@ -152,14 +152,12 @@ The following plots display the linear classification results on the frozen back
 - **Top-1 Accuracy**: The accuracy of the highest confidence prediction.
 - **Top-5 Accuracy**: The accuracy when the correct class is within the top five predictions.
 
-![Classification Training and Validation Loss, Top-1 and Top-5 Accuracy](path/to/classification_curves.png)
+![Classification Training and Validation Loss, Top-1 and Top-5 Accuracy](./images/classify.jpg)
 
 ### Summary of Results
 
 - **Pretraining Phase**: Captures the self-supervised learning on the MillionAID subset, focusing on representation learning through contrastive loss.
 - **Classification Phase**: Assesses model performance on labeled data, validating the pretrained model’s ability to generalize to a downstream classification task.
-
-Replace the `path/to/...` placeholders with the actual paths to the images once the curves are generated.
 
 
 
