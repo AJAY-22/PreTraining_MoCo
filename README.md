@@ -141,6 +141,22 @@ python -W ignore main_lincls.py
 The training curves for both pretraining on 150k images from the MillionAID dataset and the linear classification fine-tuning are provided below.
 
 ### Pretraining Results
+#### ViT, linear classification
+<table><tbody>
+<!-- START TABLE -->
+<!-- TABLE HEADER -->
+<th valign="center">model</th>
+<th valign="center">pretrain<br/>epochs</th>
+<th valign="center">pretrain<br/>crops</th>
+<th valign="center">linear<br/>acc@5</th>
+<!-- TABLE BODY -->
+<tr>
+<td align="left">ViT-Small</td>
+<td align="right">200</td>
+<td align="center">2x224</td>
+<td align="center">59.16%</td>
+</tr>
+</tbody></table>
 
 Below is the loss curve from the MoCoV3 pretraining phase on the MillionAID 150k subset:
 
