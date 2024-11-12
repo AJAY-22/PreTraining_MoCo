@@ -177,3 +177,6 @@ millionAid_small
 *.jpg
 backup
 sandbox.ipynb
+CONFIG.md
+CONTRIBUTING.md
+LICENSE
