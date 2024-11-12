@@ -26,7 +26,6 @@
   - [Install Dependencies](#install-dependencies)
   - [Prepare Dataset](#prepare-dataset)
 - [Usage](#usage)
-- [Evaluation](#evaluation)
 - [Results](#results)
 
 ## Installation
