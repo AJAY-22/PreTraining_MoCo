@@ -36,6 +36,8 @@ import moco.optimizer
 
 import vits
 
+import wandb
+
 
 torchvision_model_names = sorted(name for name in torchvision_models.__dict__
     if name.islower() and not name.startswith("__")
@@ -46,7 +48,7 @@ model_names = ['vit_small', 'vit_base', 'vit_conv_small', 'vit_conv_base'] + tor
 parser = argparse.ArgumentParser(description='MoCo ImageNet Pre-Training')
 parser.add_argument('data', metavar='DIR',
                     help='path to dataset')
-parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet50',
+parser.add_argument('-a', '--arch', metavar='ARCH', default='vit_small',
                     choices=model_names,
                     help='model architecture: ' +
                         ' | '.join(model_names) +
@@ -57,7 +59,7 @@ parser.add_argument('--epochs', default=100, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=1024, type=int,
+parser.add_argument('-b', '--batch-size', default=512, type=int,
                     metavar='N',
                     help='mini-batch size (default: 4096), this is the total '
                          'batch size of all GPUs on all nodes when '
@@ -116,10 +118,18 @@ parser.add_argument('--warmup-epochs', default=10, type=int, metavar='N',
                     help='number of warmup epochs')
 parser.add_argument('--crop-min', default=0.08, type=float,
                     help='minimum scale for random cropping (default: 0.08)')
+parser.add_argument('--checkpoint_dir', type=str, 
+                    help='Path to checkpoints folder where checkpoints will be saved')
+parser.add_argument('--checkpoint_freq', default=1, type=int, 
+                    help='Checkpoint will be stored after [freq] number of epochs. By default it will be saved each epoch')
+parser.add_argument('--maxCheckpoint', default=3, type=int,
+                    help='Only recent [maxCheckPoint] number of checkpoints will be saved')
 
 
 def main():
     args = parser.parse_args()
+
+    os.makedirs(args.checkpoint_dir, exist_ok=True)
 
     if args.seed is not None:
         random.seed(args.seed)
@@ -138,6 +148,7 @@ def main():
     if args.dist_url == "env://" and args.world_size == -1:
         args.world_size = int(os.environ["WORLD_SIZE"])
 
+
     args.distributed = args.world_size > 1 or args.multiprocessing_distributed
 
     ngpus_per_node = torch.cuda.device_count()
@@ -151,6 +162,10 @@ def main():
     else:
         # Simply call main_worker function
         main_worker(args.gpu, ngpus_per_node, args)
+    
+    # main_worker(args.gpu, ngpus_per_node, args)
+    wandb.finish()
+
 
 
 def main_worker(gpu, ngpus_per_node, args):
@@ -254,7 +269,7 @@ def main_worker(gpu, ngpus_per_node, args):
     cudnn.benchmark = True
 
     # Data loading code
-    traindir = os.path.join(args.data, 'train')
+    traindir = os.path.join(args.data)
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
 
@@ -284,7 +299,7 @@ def main_worker(gpu, ngpus_per_node, args):
         normalize
     ]
 
-    train_dataset = datasets.ImageFolder(
+    train_dataset = moco.loader.CustomImageDataset(
         traindir,
         moco.loader.TwoCropsTransform(transforms.Compose(augmentation1), 
                                       transforms.Compose(augmentation2)))
@@ -298,6 +313,10 @@ def main_worker(gpu, ngpus_per_node, args):
         train_dataset, batch_size=args.batch_size, shuffle=(train_sampler is None),
         num_workers=args.workers, pin_memory=True, sampler=train_sampler, drop_last=True)
 
+    if (not args.multiprocessing_distributed) or torch.distributed.get_rank() == 0:  # Only initialize W&B for process 0
+        print('allow' if args.resume else None)
+        wandb.init(project="Mocov3_PreTraining", name="ViT_Small_MillionAid_Full", reinit=True, resume='allow' if args.resume else None)
+    
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             train_sampler.set_epoch(epoch)
@@ -305,18 +324,20 @@ def main_worker(gpu, ngpus_per_node, args):
         # train for one epoch
         train(train_loader, model, optimizer, scaler, summary_writer, epoch, args)
 
-        if not args.multiprocessing_distributed or (args.multiprocessing_distributed
-                and args.rank == 0): # only the first GPU saves checkpoint
-            save_checkpoint({
-                'epoch': epoch + 1,
-                'arch': args.arch,
-                'state_dict': model.state_dict(),
-                'optimizer' : optimizer.state_dict(),
-                'scaler': scaler.state_dict(),
-            }, is_best=False, filename='checkpoint_%04d.pth.tar' % epoch)
+        if (epoch+1) % args.checkpoint_freq == 0:
+            if not args.multiprocessing_distributed or (args.multiprocessing_distributed
+                    and args.rank == 0): # only the first GPU saves checkpoint
+                save_checkpoint({
+                    'epoch': epoch + 1,
+                    'arch': args.arch,
+                    'state_dict': model.state_dict(),
+                    'optimizer' : optimizer.state_dict(),
+                    'scaler': scaler.state_dict(),
+                }, is_best=False, filename='full_checkpoint_%04d.pth.tar' % epoch, args=args)
 
     if args.rank == 0:
         summary_writer.close()
+        wandb.finish()
 
 def train(train_loader, model, optimizer, scaler, summary_writer, epoch, args):
     batch_time = AverageMeter('Time', ':6.3f')
@@ -366,14 +387,29 @@ def train(train_loader, model, optimizer, scaler, summary_writer, epoch, args):
         batch_time.update(time.time() - end)
         end = time.time()
 
+
+        # wandb 
+        if (not args.multiprocessing_distributed) or torch.distributed.get_rank() == 0:
+            wandb.log({
+                        'Loss': loss
+                    }, step=epoch)
+
+
         if i % args.print_freq == 0:
             progress.display(i)
 
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
-    torch.save(state, filename)
+def save_checkpoint(state, is_best, args, filename='checkpoint.pth.tar'):
+    filePath = os.path.join(args.checkpoint_dir, filename)
+    torch.save(state, filePath)
+    
+    # check number of checkpoints stored and delete if it exceeds maxCheckpoint
+    checkpoint_files = sorted([f for f in os.listdir(args.checkpoint_dir) if f.endswith('.pth.tar')])
+    if len(checkpoint_files) > args.maxCheckpoint:
+        os.remove(os.path.join(args.checkpoint_dir, checkpoint_files[0]))
+
     if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
+        shutil.copyfile(filePath, os.path.join(args.checkpoint_dir, 'model_best.pth.tar'))
 
 
 class AverageMeter(object):
@@ -436,3 +472,4 @@ def adjust_moco_momentum(epoch, args):
 
 if __name__ == '__main__':
     main()
+    wandb.finish()

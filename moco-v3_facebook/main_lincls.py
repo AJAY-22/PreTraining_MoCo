@@ -29,6 +29,8 @@ import torchvision.datasets as datasets
 import torchvision.models as torchvision_models
 
 import vits
+import wandb
+
 
 torchvision_model_names = sorted(name for name in torchvision_models.__dict__
     if name.islower() and not name.startswith("__")
@@ -46,11 +48,11 @@ parser.add_argument('-a', '--arch', metavar='ARCH', default='resnet50',
                         ' (default: resnet50)')
 parser.add_argument('-j', '--workers', default=32, type=int, metavar='N',
                     help='number of data loading workers (default: 32)')
-parser.add_argument('--epochs', default=90, type=int, metavar='N',
+parser.add_argument('--epochs', default=50, type=int, metavar='N',
                     help='number of total epochs to run')
 parser.add_argument('--start-epoch', default=0, type=int, metavar='N',
                     help='manual epoch number (useful on restarts)')
-parser.add_argument('-b', '--batch-size', default=1024, type=int,
+parser.add_argument('-b', '--batch-size', default=2048, type=int,
                     metavar='N',
                     help='mini-batch size (default: 1024), this is the total '
                          'batch size of all GPUs on all nodes when '
@@ -87,7 +89,17 @@ parser.add_argument('--multiprocessing-distributed', action='store_true',
                          'multi node data parallel training')
 
 # additional configs:
-parser.add_argument('--pretrained', default='', type=str,
+parser.add_argument('--checkpoint_dir', default='/mnt/nas/ajaypathak/GNR650/project/fineTuneCheckpoint',
+                    type=str, 
+                    help='Path to checkpoints folder where checkpoints will be saved')
+parser.add_argument('--checkpoint_freq', default=1, type=int, 
+                    help='Checkpoint will be stored after [freq] number of epochs. By default it will be saved each epoch')
+parser.add_argument('--maxCheckpoint', default=3, type=int,
+                    help='Only recent [maxCheckPoint] number of checkpoints will be saved')
+parser.add_argument('--numClasses', default=50,
+                    type=int,
+                    help='Final classification layer size, (Number of classes to classify into)')
+parser.add_argument('--pretrained', default='/mnt/nas/ajaypathak/GNR650/project/checkpoints/', type=str,
                     help='path to moco pretrained checkpoint')
 
 best_acc1 = 0
@@ -159,6 +171,9 @@ def main_worker(gpu, ngpus_per_node, args):
     else:
         model = torchvision_models.__dict__[args.arch]()
         linear_keyword = 'fc'
+
+    # added new layer as a final classification layer
+    setattr(model, linear_keyword, torch.nn.Linear(getattr(model, linear_keyword).in_features, args.numClasses))
 
     # freeze all layers but the last fc
     for name, param in model.named_parameters():
@@ -263,7 +278,7 @@ def main_worker(gpu, ngpus_per_node, args):
 
     # Data loading code
     traindir = os.path.join(args.data, 'train')
-    valdir = os.path.join(args.data, 'val')
+    valdir = os.path.join(args.data, 'test')
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
 
@@ -299,6 +314,11 @@ def main_worker(gpu, ngpus_per_node, args):
         validate(val_loader, model, criterion, args)
         return
 
+    if (not args.multiprocessing_distributed) or torch.distributed.get_rank() == 0:  # Only initialize W&B for process 0
+        print('allow' if args.resume else None)
+        wandb.init(project="Mocov3_FineTuning", name="ViT_Small", reinit=True, resume='allow' if args.resume else None)
+
+
     for epoch in range(args.start_epoch, args.epochs):
         if args.distributed:
             train_sampler.set_epoch(epoch)
@@ -308,24 +328,27 @@ def main_worker(gpu, ngpus_per_node, args):
         train(train_loader, model, criterion, optimizer, epoch, args)
 
         # evaluate on validation set
-        acc1 = validate(val_loader, model, criterion, args)
+        valA1 = validate(val_loader, model, criterion, epoch, args)
 
         # remember best acc@1 and save checkpoint
-        is_best = acc1 > best_acc1
-        best_acc1 = max(acc1, best_acc1)
+        is_best = valA1 > best_acc1
+        best_acc1 = max(valA1, best_acc1)
 
-        if not args.multiprocessing_distributed or (args.multiprocessing_distributed
-                and args.rank == 0): # only the first GPU saves checkpoint
-            save_checkpoint({
-                'epoch': epoch + 1,
-                'arch': args.arch,
-                'state_dict': model.state_dict(),
-                'best_acc1': best_acc1,
-                'optimizer' : optimizer.state_dict(),
-            }, is_best)
-            if epoch == args.start_epoch:
-                sanity_check(model.state_dict(), args.pretrained, linear_keyword)
+        if (epoch+1) % args.checkpoint_freq == 0:
+            if not args.multiprocessing_distributed or (args.multiprocessing_distributed and args.rank == 0): # only the first GPU saves checkpoint # only the first GPU saves checkpoint
+                save_checkpoint({
+                    'epoch': epoch + 1,
+                    'arch': args.arch,
+                    'state_dict': model.state_dict(),
+                    'best_acc1': best_acc1,
+                    'optimizer' : optimizer.state_dict(),
+                }, is_best)
+                
+                if epoch == args.start_epoch:
+                    sanity_check(model.state_dict(), args.pretrained, linear_keyword)
 
+    if args.rank == 0:
+        wandb.finish()
 
 def train(train_loader, model, criterion, optimizer, epoch, args):
     batch_time = AverageMeter('Time', ':6.3f')
@@ -359,6 +382,7 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
 
         # compute output
         output = model(images)
+        
         loss = criterion(output, target)
 
         # measure accuracy and record loss
@@ -376,11 +400,17 @@ def train(train_loader, model, criterion, optimizer, epoch, args):
         batch_time.update(time.time() - end)
         end = time.time()
 
+        if (not args.multiprocessing_distributed) or torch.distributed.get_rank() == 0:
+            wandb.log({
+                'trainLoss': losses.avg,
+                'train acc@1': top1.avg,
+                'train acc@5': top5.avg,
+            }, step=epoch)
+
         if i % args.print_freq == 0:
             progress.display(i)
 
-
-def validate(val_loader, model, criterion, args):
+def validate(val_loader, model, criterion, epoch, args):
     batch_time = AverageMeter('Time', ':6.3f')
     losses = AverageMeter('Loss', ':.4e')
     top1 = AverageMeter('Acc@1', ':6.2f')
@@ -415,20 +445,30 @@ def validate(val_loader, model, criterion, args):
             batch_time.update(time.time() - end)
             end = time.time()
 
+            if (not args.multiprocessing_distributed) or torch.distributed.get_rank() == 0:
+                wandb.log({
+                    'valLoss': losses.avg,
+                    'val acc@1': top1.avg,
+                    'val acc@5': top5.avg
+                }, step=epoch)
+
+
             if i % args.print_freq == 0:
                 progress.display(i)
 
         # TODO: this should also be done with the ProgressMeter
+        
         print(' * Acc@1 {top1.avg:.3f} Acc@5 {top5.avg:.3f}'
               .format(top1=top1, top5=top5))
 
     return top1.avg
 
 
-def save_checkpoint(state, is_best, filename='checkpoint.pth.tar'):
-    torch.save(state, filename)
+def save_checkpoint(state, is_best, filePath='lincClsCheckpoint.pth.tar'):
+    torch.save(state, filePath)
     if is_best:
-        shutil.copyfile(filename, 'model_best.pth.tar')
+        bestPath = os.path.join(os.path.dirname(filePath), 'model_best.pth.tar')
+        shutil.copyfile(filePath, 'model_best.pth.tar')
 
 
 def sanity_check(state_dict, pretrained_weights, linear_keyword):

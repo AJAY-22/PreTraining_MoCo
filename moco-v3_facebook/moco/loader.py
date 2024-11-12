@@ -4,11 +4,41 @@
 # This source code is licensed under the license found in the
 # LICENSE file in the root directory of this source tree.
 
+import torch
 from PIL import Image, ImageFilter, ImageOps
 import math
 import random
+import torch.utils
 import torchvision.transforms.functional as tf
+import torchvision.datasets as datasets
+from torch.utils.data import Dataset
+import os
 
+class CustomImageDataset(Dataset):
+    def __init__(self, root_dir, transform):
+        """
+        Args:
+            root_dir (str): Directory with all the images.
+            transform (callable, optional): Optional transform to be applied
+                on an image.
+        """
+        self.root_dir = root_dir
+        self.loader = datasets.folder.default_loader
+        self.transform = transform
+        self.image_paths = [os.path.join(root_dir, fname) for fname in os.listdir(root_dir) 
+                            if fname.lower().endswith(('jpg', 'jpeg', 'png'))]
+
+    def __len__(self):
+        return len(self.image_paths)
+
+    def __getitem__(self, idx):
+        img_path = self.image_paths[idx]
+        image = self.loader(img_path)
+        
+        if self.transform:
+            image = self.transform(image)
+            
+        return image, 0
 
 class TwoCropsTransform:
     """Take two random crops of one image"""
