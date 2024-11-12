@@ -31,18 +31,26 @@
 - [Results](#results)
 
 ## Installation
-
 ### Requirements
 
 This project requires the following:
-- Linux OS (recommended: Ubuntu 18.04 or later)
-- Python 3.8 or higher
-- PyTorch 1.8 or higher
-- CUDA 11.0+
-- [MMCV](https://github.com/open-mmlab/mmcv) and [MIM](https://github.com/open-mmlab/mim) for distributed training support
 
----
+- **Operating System**: Linux OS (recommended: Ubuntu 18.04 or later)
+- **Python**: Version 3.8 or higher
+- **PyTorch**: Version 1.9.0
+- **CUDA**: Version 10.2
+- **CuDNN**: Version 7.6.5
+- **timm**: Version 0.4.9 (for ViT models)
 
+To install PyTorch, CUDA, and other dependencies:
+
+```bash
+# Install PyTorch with CUDA support
+pip install torch==1.9.0 torchvision==0.10.0 torchaudio==0.9.0 --extra-index-url https://download.pytorch.org/whl/cu102
+
+# Install timm for Vision Transformer (ViT) models
+pip install timm==0.4.9
+```
 ### Setup Environment
 
 To start, create and activate a new `conda` environment:
@@ -52,32 +60,51 @@ conda create -n mocov3_pretrain python=3.8 -y
 conda activate mocov3_pretrain
 ```
 
-## 📂 Prepare MillionAID Dataset
+## 📂 Data Preparation
 
-To use the MillionAID dataset for MoCoV3 pretraining, we will download it directly from [Hugging Face Datasets](https://huggingface.co/datasets/torchgeo/million-aid). Follow these steps to get the dataset ready for training:
+To set up the MillionAID dataset for MoCoV3 pretraining, follow these steps to download, combine, and organize the dataset files.
 
-# Step 1: Clone MillionAID dataset from Hugging Face
-```shell
+---
 
-git clone https://huggingface.co/datasets/torchgeo/million-aid
-cd million-aid
+### Step 1: Download MillionAID Dataset
 
-```
+A `download.sh` script is provided in the `dataset_prepare` folder. This script will automatically download all 17 parts of the MillionAID dataset and save them in the same directory.
 
-# Step 3: Download the test and train sets as zip files
-wget -O test.zip "https://huggingface.co/datasets/torchgeo/million-aid/resolve/main/test.zip"
-wget -O train.zip "https://huggingface.co/datasets/torchgeo/million-aid/resolve/main/train.zip"
+1. **Run `download.sh`**: Execute the following commands to download the dataset:
 
-# Step 4: Unzip both files to access images
-unzip test.zip -d test_set
-unzip train.zip -d train_set
+    ```bash
+    # Navigate to the dataset_prepare directory
+    cd dataset_prepare
 
-# Step 5: Move into appropriate folders if required for easy access
-mv test_set/* path/to/dataset/folder/test
-mv train_set/* path/to/dataset/folder/train
+    # Run the download script
+    bash download.sh
+    ```
 
-# Clean up by removing zip files
-rm test.zip train.zip
+2. **Combine and Unzip**: Once the dataset is downloaded, combine and unzip the files with the following commands:
+
+    ```bash
+    # Combine all 17 parts of the MillionAID dataset into a single zip file
+    cat millionaid_part*.zip > millionaid_combined.zip
+
+    # Unzip the combined MillionAID zip file
+    unzip millionaid_combined.zip -d millionaid_dataset
+
+    # Clean up the part files and combined zip file after extraction
+    rm millionaid_part*.zip millionaid_combined.zip
+
+    echo "MillionAID dataset combined and extracted successfully."
+    ```
+
+This will download, combine, and extract the dataset into the `millionaid_dataset` folder.
+
+---
+
+### Step 2: Create a Subset of MillionAID (Optional)
+
+To create a subset of the MillionAID dataset, run the `data_sample.py` script:
+
+```bash
+python dataset_prepare/data_sample.py
 
 
 
