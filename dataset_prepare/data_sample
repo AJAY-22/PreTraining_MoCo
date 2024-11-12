@@ -1,0 +1,31 @@
+import os
+import shutil
+
+def move_contents_up(directory):
+    # Get the parent directory of the folder to be removed
+    parent_dir = os.path.dirname(directory)
+
+    # Check if the directory exists
+    if not os.path.exists(directory):
+        print(f"Directory '{directory}' does not exist.")
+        return
+    
+    # Move all contents of the directory to its parent directory
+    for item in os.listdir(directory):
+        item_path = os.path.join(directory, item)
+        target_path = os.path.join(parent_dir, item)
+        
+        # Move file or folder to the parent directory
+        if os.path.exists(target_path):
+            print(f"Skipping '{item}' as it already exists in the parent directory.")
+        else:
+            shutil.move(item_path, target_path)
+            print(f"Moved '{item_path}' to '{target_path}'")
+
+    # Remove the now-empty directory
+    os.rmdir(directory)
+    print(f"Deleted directory '{directory}'")
+
+# Usage
+directory_to_flatten = "/home/sourav/gnrproject/train/train_new"
+move_contents_up(directory_to_flatten)
