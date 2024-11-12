@@ -168,4 +168,12 @@ data
 runs
 *.json
 mmselfsup
-train
+checkpoints*
+millionAid
+wandb
+*.zip
+millionAidFull
+millionAid_small
+*.jpg
+backup
+sandbox.ipynb
