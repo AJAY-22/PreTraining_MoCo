@@ -1,7 +1,7 @@
 <div align="center">
   <img src="./logo.png" width="400" alt="Project Logo"/>
   <h1>MoCoV3 Pretraining on MillionAID</h1>
-  <p>A guide to pretraining MoCoV3 on the MillionAID dataset, including setup, dataset preparation, and common issues.</p>
+  <p>A guide to pretraining MoCoV3 on the MillionAID dataset, including setup, dataset preparation and training results</p>
   <br/>
 
 
@@ -25,7 +25,6 @@
   - [Setup Environment](#setup-environment)
   - [Install Dependencies](#install-dependencies)
   - [Prepare Dataset](#prepare-dataset)
-  - [Common Issues](#common-issues)
 - [Usage](#usage)
 - [Evaluation](#evaluation)
 - [Results](#results)
@@ -105,6 +104,63 @@ To create a subset of the MillionAID dataset, run the `data_sample.py` script:
 
 ```bash
 python dataset_prepare/data_sample.py
+```
+## Usage: Preparation
+
+To set up MoCoV3 for self-supervised pretraining on the MillionAID dataset, follow the steps below. We used **6 NVIDIA A6000 GPUs** for pretraining with data-parallel processing, a batch size of **1024**, learning rate of **1.5e-4**, and **200 epochs** with a **warmup of 25 epochs**. For Vision Transformer (ViT) models, ensure `timm` is installed (`timm==0.4.9`).
+
+The code has been tested with **CUDA 10.2**, **CuDNN 7.6.5**, **PyTorch 1.9.0**, and **timm 0.4.9**.
+
+### Self-supervised Pre-Training
+
+To start MoCoV3 pretraining on ViT-Small with the MillionAID dataset, run the following command:
+
+```bash
+python main_moco.py \
+  -a vit_small -b 1024 \
+  --optimizer adamw --lr 1.5e-4 --weight-decay .1 \
+  --epochs 200 --warmup-epochs 25 \
+  --stop-grad-conv1 --moco-m-cos --moco-t .2 \
+  --dist-url 'tcp://localhost:10001' \
+  --multiprocessing-distributed --world-size 1 --rank 0 \
+  /path/to/millionaid_dataset
+```
+## Usage: Linear Classification
+
+For linear classification, we fine-tuned the MLP layer and classification head on the MillionAID dataset while keeping the pretrained backbone frozen. We used **8,000 images** for training and **2,000 images** for testing from the MillionAID dataset with a **batch size of 1024**. This setup can be run on a single node with multiple GPUs.
+
+To start the linear classification process, run the following command:
+
+```bash
+python -W ignore main_lincls.py   -a [ARCH] --lr 5e-5   --dist-url 'tcp://localhost:10012'   --multiprocessing-distributed --world-size 1 --rank 0   --pretrained [PATH/TO/PRETRAINED/MOCO/CHECKPOINT] [PATH/TO/LABELLED_DATASET]
+```
+## Results
+
+The training curves for both pretraining on 150k images from the MillionAID dataset and the linear classification fine-tuning are provided below.
+
+### Pretraining Results
+
+Below is the loss curve from the MoCoV3 pretraining phase on the MillionAID 150k subset:
+
+![Pretraining Loss Curve](path/to/pretraining_loss_curve.png)
+
+### Linear Classification Results
+
+The following plots display the linear classification results on the frozen backbone with fine-tuned MLP and classification head. Training was performed on 8,000 images, with evaluation on a separate set of 2,000 images. The curves below show:
+
+- **Training and Validation Loss**: Loss over epochs for both training and validation datasets.
+- **Top-1 Accuracy**: The accuracy of the highest confidence prediction.
+- **Top-5 Accuracy**: The accuracy when the correct class is within the top five predictions.
+
+![Classification Training and Validation Loss, Top-1 and Top-5 Accuracy](path/to/classification_curves.png)
+
+### Summary of Results
+
+- **Pretraining Phase**: Captures the self-supervised learning on the MillionAID subset, focusing on representation learning through contrastive loss.
+- **Classification Phase**: Assesses model performance on labeled data, validating the pretrained model’s ability to generalize to a downstream classification task.
+
+Replace the `path/to/...` placeholders with the actual paths to the images once the curves are generated.
+
 
 
 
