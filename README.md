@@ -131,7 +131,10 @@ For linear classification, we fine-tuned the MLP layer and classification head o
 To start the linear classification process, run the following command:
 
 ```bash
-python -W ignore main_lincls.py   -a [ARCH] --lr 5e-5   --dist-url 'tcp://localhost:10012'   --multiprocessing-distributed --world-size 1 --rank 0   --pretrained [PATH/TO/PRETRAINED/MOCO/CHECKPOINT] [PATH/TO/LABELLED_DATASET]
+python -W ignore main_lincls.py
+  -a [ARCH] --lr 5e-5   --dist-url 'tcp://localhost:10012'
+  --multiprocessing-distributed --world-size 1 --rank 0
+--pretrained [PATH/TO/PRETRAINED/MOCO/CHECKPOINT] [PATH/TO/LABELLED_DATASET]
 ```
 ## Results
 
