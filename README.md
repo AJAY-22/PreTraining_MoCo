@@ -162,6 +162,22 @@ Below is the loss curve from the MoCoV3 pretraining phase on the MillionAID 150k
 
 ![Pretraining Loss Curve](./images/pretraining.jpg)
 
+### t-SNE Plot Evaluation
+The t-SNE visualization of the feature space from MoCoV3 pretraining on the MillionAID 150k subset demonstrates effective feature learning:
+
+#### Well-Separated Clusters: 
+Most classes form distinct, compact clusters, indicating discriminative feature learning.
+#### Overlap in Similar Classes: 
+Minor overlaps (e.g., between meadow and grass field) occur due to data imbalance and random sampling.
+#### Class Imbalance: 
+Underrepresented classes show less compact clusters, highlighting the impact of training imbalance.
+
+
+Despite challenges, the t-SNE plot shows that MoCoV3 learns meaningful representations, making it suitable for downstream tasks. Further improvements could focus on addressing class imbalance and overlap.
+
+![TSNE plot](./images/tsne_plot.png)
+
+
 ### Linear Classification Results
 
 The following plots display the linear classification results on the frozen backbone with fine-tuned MLP and classification head. Training was performed on 8,000 images, with evaluation on a separate set of 2,000 images. The curves below show:
